@@ -404,11 +404,94 @@ textarea::placeholder {
 
 .upload-card {
   justify-items: start;
-  padding: 18px;
+  padding: 0;
+  border: none;
+  background: transparent;
 }
 
-.upload-card .primary-button {
-  min-width: 154px;
+.upload-dropzone {
+  display: grid;
+  width: 100%;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  border: 1px dashed color-mix(in srgb, var(--border) 72%, var(--accent));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--bg) 82%, var(--surface));
+  padding: 14px;
+  color: var(--text-strong);
+  cursor: pointer;
+  text-align: left;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    transform 160ms ease;
+}
+
+.upload-dropzone:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--success-bg) 42%, var(--surface));
+  transform: translateY(-1px);
+}
+
+.upload-dropzone:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+
+.upload-dropzone:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+
+.upload-dropzone.is-ready {
+  border-style: solid;
+  border-color: var(--success-border);
+  background: var(--success-bg);
+}
+
+.upload-icon {
+  display: inline-grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--accent);
+}
+
+.upload-icon svg {
+  width: 19px;
+  height: 19px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.upload-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.upload-copy strong,
+.upload-copy span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.upload-copy strong {
+  color: var(--text-strong);
+  font-size: 15px;
+}
+
+.upload-copy span {
+  color: var(--text);
+  font-size: 13px;
 }
 
 .visually-hidden {

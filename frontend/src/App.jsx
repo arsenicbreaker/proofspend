@@ -96,6 +96,7 @@ function App() {
   const [selectedProof, setSelectedProof] = useState(null)
   const [latestRecord, setLatestRecord] = useState(null)
   const [verificationResult, setVerificationResult] = useState(null)
+  const [selectedReceiptFile, setSelectedReceiptFile] = useState('')
   const [loadingAction, setLoadingAction] = useState('')
   const connected = Boolean(address)
 
@@ -134,6 +135,7 @@ function App() {
       setSelectedProof(null)
       setLatestRecord(null)
       setVerificationResult(null)
+      setSelectedReceiptFile('')
     }
   }
 
@@ -209,6 +211,7 @@ function App() {
     event.target.value = ''
     if (!file) return
 
+    setSelectedReceiptFile(file.name)
     setError('')
     setStatus('')
     setVerificationResult(null)
@@ -474,11 +477,37 @@ function App() {
             />
             <button
               type="button"
-              className="primary-button"
+              className={
+                selectedReceiptFile ? 'upload-dropzone is-ready' : 'upload-dropzone'
+              }
               onClick={() => receiptFileRef.current?.click()}
               disabled={loadingAction === 'verify'}
             >
-              {loadingAction === 'verify' ? 'Verifying...' : 'Upload JSON'}
+              <span className="upload-icon" aria-hidden="true">
+                {selectedReceiptFile ? (
+                  <svg viewBox="0 0 24 24" focusable="false">
+                    <path d="M20 6 9 17l-5-5" />
+                  </svg>
+                ) : (
+                  <svg viewBox="0 0 24 24" focusable="false">
+                    <path d="M12 16V4" />
+                    <path d="m7 9 5-5 5 5" />
+                    <path d="M5 20h14" />
+                  </svg>
+                )}
+              </span>
+              <span className="upload-copy">
+                <strong>
+                  {selectedReceiptFile
+                    ? selectedReceiptFile
+                    : loadingAction === 'verify'
+                      ? 'Verifying receipt JSON'
+                      : 'Upload receipt JSON'}
+                </strong>
+                <span>
+                  {selectedReceiptFile ? 'Ready to verify' : 'Click to choose a .json file'}
+                </span>
+              </span>
             </button>
             <p>Upload a saved receipt JSON to verify its proof.</p>
           </div>

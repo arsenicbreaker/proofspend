@@ -1,5 +1,3 @@
----
-
 ## 📌 Project Description
 
 ProofSpend is an application for recording and verifying private expense proofs using a Stellar Soroban smart contract.
@@ -12,7 +10,7 @@ The original receipt data remains stored by the user in a JSON file. This file c
 
 ## 🖼️ Screenshot
 
-> Add your application screenshot to the `docs` folder with the filename `screenshot.png`.
+![Result](frontend/src/assets/result.png)
 
 ---
 

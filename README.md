@@ -1,10 +1,25 @@
+<div align="center">
+  <h1>🧾 ProofSpend</h1>
+  <p><strong>A privacy-focused expense proof verification system powered by Stellar Soroban.</strong></p>
+  <img src="https://img.shields.io/badge/Network-Stellar%20Testnet-blue" alt="Stellar Testnet" />
+  <img src="https://img.shields.io/badge/Soroban-Smart%20Contract-orange" alt="Stellar Soroban" />
+  <img src="https://img.shields.io/badge/Frontend-React-61DAFB" alt="React" />
+  <img src="https://img.shields.io/badge/Build-Vite-646CFF" alt="Vite" />
+
+</div>
+
+---
 ## 📌 Project Description
 
-ProofSpend is an application for recording and verifying private expense proofs using a Stellar Soroban smart contract.
+ProofSpend is an expense recording and proof verification application designed for organizations, communities, student associations, and internal teams that need a more transparent way to manage financial records.
 
-This application does not store the original receipt data on the blockchain. Data such as invoice number, vendor, amount, and date are processed directly in the browser and converted into a SHA-256 hash. The generated hash is then sent to the smart contract as the expense proof.
+The application can be used to record organizational expenses, activity budgets, cash spending, reimbursement records, or other financial transactions that require proof. Instead of only storing expense data in a regular document or spreadsheet, ProofSpend creates a verifiable proof from each record using a Stellar Soroban smart contract.
 
-The original receipt data remains stored by the user in a JSON file. This file can be used later to verify the recorded proof.
+ProofSpend does not store the original receipt data on the blockchain. Information such as invoice number, vendor, amount, and date is processed directly in the browser and converted into a SHA-256 hash. The generated hash is then sent to the smart contract as an immutable proof of the expense record.
+
+The original receipt data remains stored by the user in a JSON file. This file can be used later to verify whether the expense data still matches the proof recorded on-chain.
+
+With this approach, ProofSpend helps organizations keep expense records more accountable while still protecting the privacy of the original transaction details.
 
 ---
 

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import {
   StellarContractsKit,
   isContractKitError,
@@ -85,18 +85,17 @@ function isValidReceiptRecord(record) {
 
 function App() {
   const kit = useMemo(() => new StellarContractsKit({ network: NETWORK }), [])
+  const receiptFileRef = useRef(null)
   const [address, setAddress] = useState('')
   const [walletState, setWalletState] = useState('idle')
   const [status, setStatus] = useState('')
   const [error, setError] = useState('')
   const [expenseForm, setExpenseForm] = useState(emptyReceipt)
-  const [verifyId, setVerifyId] = useState('')
-  const [verifyForm, setVerifyForm] = useState(emptyReceipt)
   const [lookupId, setLookupId] = useState('')
   const [userExpenses, setUserExpenses] = useState([])
   const [selectedProof, setSelectedProof] = useState(null)
-  const [verification, setVerification] = useState(null)
   const [latestRecord, setLatestRecord] = useState(null)
+  const [verificationResult, setVerificationResult] = useState(null)
   const [loadingAction, setLoadingAction] = useState('')
   const connected = Boolean(address)
 
@@ -133,8 +132,8 @@ function App() {
       setAddress('')
       setUserExpenses([])
       setSelectedProof(null)
-      setVerification(null)
       setLatestRecord(null)
+      setVerificationResult(null)
     }
   }
 
@@ -212,7 +211,7 @@ function App() {
 
     setError('')
     setStatus('')
-    setVerification(null)
+    setVerificationResult(null)
 
     try {
       const record = JSON.parse(await file.text())
@@ -220,30 +219,47 @@ function App() {
         throw new Error('Invalid ProofSpend receipt record for this contract.')
       }
 
-      setVerifyId(String(record.expenseId))
-      setVerifyForm(record.receipt)
       setLatestRecord(record)
-      setStatus(`Receipt record #${record.expenseId} loaded for verification.`)
+      await verifyReceiptRecord(record)
     } catch (importError) {
-      setError(formatError(importError))
+      setVerificationResult({
+        state: 'failed',
+        title: 'Verification failed',
+        message: formatError(importError),
+      })
     }
   }
 
-  async function verifyExpense(event) {
-    event.preventDefault()
+  async function verifyReceiptRecord(record) {
     setLoadingAction('verify')
     setError('')
     setStatus('')
-    setVerification(null)
 
     try {
-      const hash = await createProofHash(createReceiptReference(verifyForm))
+      const hash = await createProofHash(createReceiptReference(record.receipt))
+      const proofHash = bytesToHex(hash)
       const contract = await getContract()
-      const { result } = await contract.verify_expense.read(Number(verifyId), hash)
-      setVerification(result)
-      setStatus(result ? 'Proof hash matches this expense.' : 'Proof hash does not match.')
+      const { result } = await contract.verify_expense.read(Number(record.expenseId), hash)
+      const { result: storedProof } = await contract.get_expense.read(Number(record.expenseId))
+      const storedHash = storedProof?.hash ? bytesToHex(storedProof.hash) : ''
+
+      setVerificationResult({
+        state: result ? 'verified' : 'failed',
+        title: result ? 'Verified proof' : 'Verification failed',
+        message: result
+          ? 'Receipt JSON matches the proof stored on-chain.'
+          : 'Receipt JSON does not match the proof stored on-chain.',
+        record,
+        proofHash,
+        storedHash,
+      })
     } catch (verifyError) {
-      setError(formatError(verifyError))
+      setVerificationResult({
+        state: 'failed',
+        title: 'Verification failed',
+        message: formatError(verifyError),
+        record,
+      })
     } finally {
       setLoadingAction('')
     }
@@ -275,9 +291,7 @@ function App() {
   }
 
   const expenseReady = Object.values(expenseForm).every((value) => value.trim())
-  const verifyReady = Object.values(verifyForm).every((value) => value.trim())
   const canAdd = connected && expenseReady && loadingAction !== 'add'
-  const canVerify = verifyId !== '' && verifyReady && loadingAction !== 'verify'
   const canLookup = lookupId !== '' && loadingAction !== 'lookup'
 
   return (
@@ -442,109 +456,35 @@ function App() {
           ) : null}
         </form>
 
-        <div className="panel stack-panel">
-          <form onSubmit={verifyExpense}>
-            <div className="panel-heading compact">
-              <p className="eyebrow">Read</p>
-              <h2>Verify proof</h2>
-            </div>
+        <section className="panel read-panel" aria-labelledby="verify-proof-title">
+          <div className="panel-heading compact">
+            <p className="eyebrow">Read</p>
+            <h2 id="verify-proof-title">Verify proof</h2>
+            <p>Check a saved receipt record against the ProofSpend contract.</p>
+          </div>
 
-            <div className="upload-record">
-              <label htmlFor="receipt-record-file">Receipt JSON</label>
-              <input
-                id="receipt-record-file"
-                type="file"
-                accept="application/json,.json"
-                onChange={importReceiptRecord}
-              />
-              <p>Upload a saved receipt record to fill the verify fields.</p>
-            </div>
-
-            <div className="field-grid">
-              <div className="field">
-                <label htmlFor="verify-id">Expense ID</label>
-                <input
-                  id="verify-id"
-                  type="number"
-                  min="0"
-                  inputMode="numeric"
-                  value={verifyId}
-                  onChange={(event) => setVerifyId(event.target.value)}
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="receipt-grid compact-grid">
-              <div className="field">
-                <label htmlFor="verify-invoice">Invoice number</label>
-                <input
-                  id="verify-invoice"
-                  type="text"
-                  value={verifyForm.invoice}
-                  onChange={(event) =>
-                    setVerifyForm((form) => ({ ...form, invoice: event.target.value }))
-                  }
-                  placeholder="INV-2048"
-                  autoComplete="off"
-                  required
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="verify-vendor">Vendor</label>
-                <input
-                  id="verify-vendor"
-                  type="text"
-                  value={verifyForm.vendor}
-                  onChange={(event) =>
-                    setVerifyForm((form) => ({ ...form, vendor: event.target.value }))
-                  }
-                  placeholder="Tokopedia"
-                  autoComplete="organization"
-                  required
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="verify-amount">Amount</label>
-                <input
-                  id="verify-amount"
-                  type="text"
-                  inputMode="decimal"
-                  value={verifyForm.amount}
-                  onChange={(event) =>
-                    setVerifyForm((form) => ({ ...form, amount: event.target.value }))
-                  }
-                  placeholder="250000 IDR"
-                  autoComplete="off"
-                  required
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="verify-date">Date</label>
-                <input
-                  id="verify-date"
-                  type="date"
-                  value={verifyForm.date}
-                  onChange={(event) =>
-                    setVerifyForm((form) => ({ ...form, date: event.target.value }))
-                  }
-                  required
-                />
-              </div>
-            </div>
-
-            <button type="submit" className="secondary-button" disabled={!canVerify}>
-              {loadingAction === 'verify' ? 'Checking...' : 'Verify'}
+          <div className="upload-card">
+            <input
+              ref={receiptFileRef}
+              id="receipt-record-file"
+              className="visually-hidden"
+              type="file"
+              accept="application/json,.json"
+              onChange={importReceiptRecord}
+            />
+            <button
+              type="button"
+              className="primary-button"
+              onClick={() => receiptFileRef.current?.click()}
+              disabled={loadingAction === 'verify'}
+            >
+              {loadingAction === 'verify' ? 'Verifying...' : 'Upload JSON'}
             </button>
+            <p>Upload a saved receipt JSON to verify its proof.</p>
+          </div>
+        </section>
 
-            {verification !== null ? (
-              <p className={verification ? 'result good' : 'result bad'}>
-                {verification ? 'Matched proof hash' : 'Hash mismatch'}
-              </p>
-            ) : null}
-          </form>
-
-          <form onSubmit={lookupExpense}>
+        <form className="panel inspect-panel" onSubmit={lookupExpense}>
             <div className="panel-heading compact">
               <p className="eyebrow">Inspect</p>
               <h2>Lookup expense</h2>
@@ -584,8 +524,7 @@ function App() {
             ) : (
               <p className="empty-copy">Lookup an ID to see owner and hash metadata.</p>
             )}
-          </form>
-        </div>
+        </form>
 
         <aside className="panel wallet-panel" aria-labelledby="wallet-panel-title">
           <div className="panel-heading compact">
@@ -629,6 +568,86 @@ function App() {
           )}
         </aside>
       </section>
+
+      {verificationResult ? (
+        <div
+          className="modal-backdrop"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setVerificationResult(null)
+          }}
+        >
+          <section
+            className="verification-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="verification-title"
+          >
+            <div className="modal-heading">
+              <span
+                className={
+                  verificationResult.state === 'verified'
+                    ? 'modal-status verified'
+                    : 'modal-status failed'
+                }
+              >
+                {verificationResult.state === 'verified' ? 'Verified' : 'Not Verified'}
+              </span>
+              <h2 id="verification-title">{verificationResult.title}</h2>
+              <p>{verificationResult.message}</p>
+            </div>
+
+            {verificationResult.record ? (
+              <dl className="verification-details">
+                <div>
+                  <dt>Expense ID</dt>
+                  <dd>{verificationResult.record.expenseId}</dd>
+                </div>
+                <div>
+                  <dt>Invoice Number</dt>
+                  <dd>{verificationResult.record.receipt.invoice}</dd>
+                </div>
+                <div>
+                  <dt>Vendor</dt>
+                  <dd>{verificationResult.record.receipt.vendor}</dd>
+                </div>
+                <div>
+                  <dt>Amount</dt>
+                  <dd>{verificationResult.record.receipt.amount}</dd>
+                </div>
+                <div>
+                  <dt>Date</dt>
+                  <dd>{verificationResult.record.receipt.date}</dd>
+                </div>
+                <div>
+                  <dt>Proof Hash</dt>
+                  <dd>{verificationResult.proofHash ?? verificationResult.record.proofHash}</dd>
+                </div>
+                <div>
+                  <dt>Onchain Hash</dt>
+                  <dd>{verificationResult.storedHash || 'Not found'}</dd>
+                </div>
+                <div>
+                  <dt>Tx Hash</dt>
+                  <dd>{verificationResult.record.txHash || 'Not included'}</dd>
+                </div>
+                <div>
+                  <dt>Contract</dt>
+                  <dd>{verificationResult.record.contractId}</dd>
+                </div>
+              </dl>
+            ) : null}
+
+            <button
+              type="button"
+              className="primary-button modal-close"
+              onClick={() => setVerificationResult(null)}
+            >
+              Close
+            </button>
+          </section>
+        </div>
+      ) : null}
     </main>
   )
 }

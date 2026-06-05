@@ -270,33 +270,45 @@ a:focus-visible {
 
 .workspace {
   display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.95fr) minmax(260px, 0.7fr);
-  gap: 16px;
-  align-items: start;
+  grid-template-areas:
+    'write read wallet'
+    'write inspect wallet';
+  grid-template-columns: minmax(340px, 1.04fr) minmax(360px, 1fr) minmax(260px, 0.78fr);
+  gap: 18px;
+  align-items: stretch;
 }
 
 .panel {
+  min-width: 0;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--surface);
-  padding: 22px;
+  padding: 24px;
 }
 
 .primary-panel,
-.stack-panel form,
+.read-panel,
+.inspect-panel,
 .wallet-panel {
   display: grid;
   gap: 16px;
+  align-content: start;
 }
 
-.stack-panel {
-  display: grid;
-  gap: 22px;
+.primary-panel {
+  grid-area: write;
 }
 
-.stack-panel form + form {
-  border-top: 1px solid var(--border);
-  padding-top: 22px;
+.read-panel {
+  grid-area: read;
+}
+
+.inspect-panel {
+  grid-area: inspect;
+}
+
+.wallet-panel {
+  grid-area: wallet;
 }
 
 .panel-heading {
@@ -361,7 +373,7 @@ textarea::placeholder {
 }
 
 .download-record,
-.upload-record {
+.upload-card {
   display: grid;
   gap: 10px;
   border: 1px solid var(--border);
@@ -385,22 +397,34 @@ textarea::placeholder {
 }
 
 .download-record span,
-.upload-record p {
+.upload-card p {
   color: var(--text);
   font-size: 14px;
 }
 
-.upload-record input[type='file'] {
-  min-height: auto;
-  border-style: dashed;
-  padding: 10px;
-  cursor: pointer;
+.upload-card {
+  justify-items: start;
+  padding: 18px;
+}
+
+.upload-card .primary-button {
+  min-width: 154px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .receipt-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
+  gap: 14px 12px;
 }
 
 .compact-grid {
@@ -412,12 +436,15 @@ textarea::placeholder {
   gap: 6px;
 }
 
-.field:first-child {
+.field-grid .field:first-child {
   max-width: 136px;
 }
 
 .inline-field {
+  display: grid;
+  grid-template-columns: auto minmax(88px, 1fr) auto;
   gap: 10px;
+  align-items: end;
 }
 
 .inline-field label {
@@ -475,6 +502,8 @@ textarea::placeholder {
   display: grid;
   gap: 8px;
   margin: 0;
+  max-height: 260px;
+  overflow: auto;
   padding: 0;
   list-style: none;
 }
@@ -510,6 +539,106 @@ textarea::placeholder {
   text-decoration: none;
 }
 
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(12, 18, 15, 0.44);
+}
+
+.verification-modal {
+  width: min(680px, 100%);
+  max-height: min(780px, calc(100svh - 36px));
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  padding: 26px;
+}
+
+.modal-heading {
+  display: grid;
+  gap: 8px;
+}
+
+.modal-heading h2 {
+  margin: 0;
+  color: var(--text-strong);
+  font-size: 28px;
+  line-height: 1.1;
+  letter-spacing: 0;
+}
+
+.modal-heading p {
+  margin: 0;
+  color: var(--text);
+  line-height: 1.6;
+}
+
+.modal-status {
+  width: max-content;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.modal-status.verified {
+  border-color: var(--success-border);
+  background: var(--success-bg);
+  color: var(--success-text);
+}
+
+.modal-status.failed {
+  border-color: var(--error-border);
+  background: var(--error-bg);
+  color: var(--error-text);
+}
+
+.verification-details {
+  display: grid;
+  gap: 0;
+  margin: 22px 0;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.verification-details div {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  gap: 14px;
+  padding: 12px 14px;
+  background: var(--bg);
+}
+
+.verification-details div + div {
+  border-top: 1px solid var(--border);
+}
+
+.verification-details dt {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.verification-details dd {
+  margin: 0;
+  color: var(--text-strong);
+  font-family: var(--mono);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.modal-close {
+  width: 100%;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .primary-button,
   .secondary-button,
@@ -523,6 +652,14 @@ textarea::placeholder {
   .hero-section,
   .workspace {
     grid-template-columns: 1fr;
+  }
+
+  .workspace {
+    grid-template-areas:
+      'write'
+      'read'
+      'inspect'
+      'wallet';
   }
 
   .hero-section {
@@ -559,6 +696,11 @@ textarea::placeholder {
 
   .download-record {
     grid-template-columns: 1fr;
+  }
+
+  .upload-card,
+  .upload-card .primary-button {
+    width: 100%;
   }
 
   .hero-copy h1 {
@@ -611,5 +753,14 @@ textarea::placeholder {
 
   .panel {
     padding: 18px;
+  }
+
+  .verification-modal {
+    padding: 20px;
+  }
+
+  .verification-details div {
+    grid-template-columns: 1fr;
+    gap: 4px;
   }
 }

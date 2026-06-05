@@ -360,6 +360,53 @@ textarea::placeholder {
   gap: 12px;
 }
 
+.download-record,
+.upload-record {
+  display: grid;
+  gap: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  padding: 14px;
+}
+
+.download-record {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.download-record div {
+  display: grid;
+  gap: 2px;
+}
+
+.download-record strong {
+  color: var(--text-strong);
+}
+
+.download-record span,
+.upload-record p {
+  color: var(--text);
+  font-size: 14px;
+}
+
+.upload-record input[type='file'] {
+  min-height: auto;
+  border-style: dashed;
+  padding: 10px;
+  cursor: pointer;
+}
+
+.receipt-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.compact-grid {
+  gap: 12px;
+}
+
 .field {
   display: grid;
   gap: 6px;
@@ -510,6 +557,10 @@ textarea::placeholder {
     justify-content: stretch;
   }
 
+  .download-record {
+    grid-template-columns: 1fr;
+  }
+
   .hero-copy h1 {
     font-size: 42px;
   }
@@ -543,8 +594,14 @@ textarea::placeholder {
   }
 
   .field-grid,
-  .inline-field {
+  .inline-field,
+  .receipt-grid {
     align-items: stretch;
+    grid-template-columns: 1fr;
+  }
+
+  .field-grid,
+  .inline-field {
     flex-direction: column;
   }
 

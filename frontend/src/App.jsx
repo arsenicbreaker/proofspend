@@ -33,19 +33,70 @@ function formatError(error) {
   return 'Something went wrong. Please try again.'
 }
 
+function createReceiptReference({ invoice, vendor, amount, date }) {
+  return [
+    `invoice:${invoice.trim()}`,
+    `vendor:${vendor.trim()}`,
+    `amount:${amount.trim()}`,
+    `date:${date.trim()}`,
+  ].join('|')
+}
+
+const emptyReceipt = {
+  invoice: '',
+  vendor: '',
+  amount: '',
+  date: '',
+}
+
+function createReceiptRecord({ expenseId, owner, txHash, proofHash, receipt }) {
+  return {
+    type: 'proofspend.receipt-record',
+    version: 1,
+    network: NETWORK,
+    contractId: CONTRACT_ID,
+    expenseId: String(expenseId),
+    owner,
+    txHash,
+    proofHash,
+    receipt: {
+      invoice: receipt.invoice.trim(),
+      vendor: receipt.vendor.trim(),
+      amount: receipt.amount.trim(),
+      date: receipt.date.trim(),
+    },
+    createdAt: new Date().toISOString(),
+  }
+}
+
+function isValidReceiptRecord(record) {
+  return (
+    record &&
+    record.type === 'proofspend.receipt-record' &&
+    record.contractId === CONTRACT_ID &&
+    record.network === NETWORK &&
+    record.expenseId !== undefined &&
+    record.receipt &&
+    ['invoice', 'vendor', 'amount', 'date'].every(
+      (key) => typeof record.receipt[key] === 'string' && record.receipt[key].trim(),
+    )
+  )
+}
+
 function App() {
   const kit = useMemo(() => new StellarContractsKit({ network: NETWORK }), [])
   const [address, setAddress] = useState('')
   const [walletState, setWalletState] = useState('idle')
   const [status, setStatus] = useState('')
   const [error, setError] = useState('')
-  const [proofInput, setProofInput] = useState('')
+  const [expenseForm, setExpenseForm] = useState(emptyReceipt)
   const [verifyId, setVerifyId] = useState('')
-  const [verifyInput, setVerifyInput] = useState('')
+  const [verifyForm, setVerifyForm] = useState(emptyReceipt)
   const [lookupId, setLookupId] = useState('')
   const [userExpenses, setUserExpenses] = useState([])
   const [selectedProof, setSelectedProof] = useState(null)
   const [verification, setVerification] = useState(null)
+  const [latestRecord, setLatestRecord] = useState(null)
   const [loadingAction, setLoadingAction] = useState('')
   const connected = Boolean(address)
 
@@ -83,6 +134,7 @@ function App() {
       setUserExpenses([])
       setSelectedProof(null)
       setVerification(null)
+      setLatestRecord(null)
     }
   }
 
@@ -114,16 +166,66 @@ function App() {
     setStatus('')
 
     try {
-      const hash = await createProofHash(proofInput)
+      const receipt = { ...expenseForm }
+      const hash = await createProofHash(createReceiptReference(receipt))
       const contract = await getContract()
       const { result, txHash } = await contract.add_expense.invoke(address, hash)
+      const record = createReceiptRecord({
+        expenseId: result,
+        owner: address,
+        txHash,
+        proofHash: bytesToHex(hash),
+        receipt,
+      })
+
+      setLatestRecord(record)
       setStatus(`Expense proof #${result} recorded. Tx ${truncateAddress(txHash, 6)}`)
-      setProofInput('')
+      setExpenseForm(emptyReceipt)
       await refreshUserExpenses(address)
     } catch (addError) {
       setError(formatError(addError))
     } finally {
       setLoadingAction('')
+    }
+  }
+
+  function downloadReceiptRecord(record = latestRecord) {
+    if (!record) return
+
+    const file = new Blob([`${JSON.stringify(record, null, 2)}\n`], {
+      type: 'application/json',
+    })
+    const url = URL.createObjectURL(file)
+    const link = document.createElement('a')
+
+    link.href = url
+    link.download = `proofspend-expense-${record.expenseId}.json`
+    link.click()
+    URL.revokeObjectURL(url)
+    setStatus(`Receipt record #${record.expenseId} downloaded.`)
+  }
+
+  async function importReceiptRecord(event) {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+
+    setError('')
+    setStatus('')
+    setVerification(null)
+
+    try {
+      const record = JSON.parse(await file.text())
+      if (!isValidReceiptRecord(record)) {
+        throw new Error('Invalid ProofSpend receipt record for this contract.')
+      }
+
+      setVerifyId(String(record.expenseId))
+      setVerifyForm(record.receipt)
+      setLatestRecord(record)
+      setStatus(`Receipt record #${record.expenseId} loaded for verification.`)
+    } catch (importError) {
+      setError(formatError(importError))
     }
   }
 
@@ -135,7 +237,7 @@ function App() {
     setVerification(null)
 
     try {
-      const hash = await createProofHash(verifyInput)
+      const hash = await createProofHash(createReceiptReference(verifyForm))
       const contract = await getContract()
       const { result } = await contract.verify_expense.read(Number(verifyId), hash)
       setVerification(result)
@@ -172,8 +274,10 @@ function App() {
     setStatus('Wallet address copied.')
   }
 
-  const canAdd = connected && proofInput.trim() && loadingAction !== 'add'
-  const canVerify = verifyId !== '' && verifyInput.trim() && loadingAction !== 'verify'
+  const expenseReady = Object.values(expenseForm).every((value) => value.trim())
+  const verifyReady = Object.values(verifyForm).every((value) => value.trim())
+  const canAdd = connected && expenseReady && loadingAction !== 'add'
+  const canVerify = verifyId !== '' && verifyReady && loadingAction !== 'verify'
   const canLookup = lookupId !== '' && loadingAction !== 'lookup'
 
   return (
@@ -254,24 +358,88 @@ function App() {
             <p className="eyebrow">Write</p>
             <h2>Add expense proof</h2>
             <p>
-              Paste receipt text or a unique invoice reference. The browser hashes it
-              before sending the proof to the contract.
+              Fill the receipt fields. The browser combines and hashes them before
+              sending the proof to the contract.
             </p>
           </div>
 
-          <label htmlFor="proof-input">Receipt reference</label>
-          <textarea
-            id="proof-input"
-            value={proofInput}
-            onChange={(event) => setProofInput(event.target.value)}
-            placeholder="Example: INV-2048 | vendor | amount | date"
-            rows="5"
-            required
-          ></textarea>
+          <div className="receipt-grid">
+            <div className="field">
+              <label htmlFor="invoice-number">Invoice number</label>
+              <input
+                id="invoice-number"
+                type="text"
+                value={expenseForm.invoice}
+                onChange={(event) =>
+                  setExpenseForm((form) => ({ ...form, invoice: event.target.value }))
+                }
+                placeholder="INV-2048"
+                autoComplete="off"
+                required
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="vendor-name">Vendor</label>
+              <input
+                id="vendor-name"
+                type="text"
+                value={expenseForm.vendor}
+                onChange={(event) =>
+                  setExpenseForm((form) => ({ ...form, vendor: event.target.value }))
+                }
+                placeholder="Tokopedia"
+                autoComplete="organization"
+                required
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="expense-amount">Amount</label>
+              <input
+                id="expense-amount"
+                type="text"
+                inputMode="decimal"
+                value={expenseForm.amount}
+                onChange={(event) =>
+                  setExpenseForm((form) => ({ ...form, amount: event.target.value }))
+                }
+                placeholder="250000 IDR"
+                autoComplete="off"
+                required
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="expense-date">Date</label>
+              <input
+                id="expense-date"
+                type="date"
+                value={expenseForm.date}
+                onChange={(event) =>
+                  setExpenseForm((form) => ({ ...form, date: event.target.value }))
+                }
+                required
+              />
+            </div>
+          </div>
 
           <button type="submit" className="primary-button" disabled={!canAdd}>
             {loadingAction === 'add' ? 'Recording...' : 'Record proof'}
           </button>
+
+          {latestRecord ? (
+            <div className="download-record">
+              <div>
+                <strong>Receipt record ready</strong>
+                <span>Save this JSON file so you can verify later.</span>
+              </div>
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={() => downloadReceiptRecord()}
+              >
+                Download JSON
+              </button>
+            </div>
+          ) : null}
         </form>
 
         <div className="panel stack-panel">
@@ -279,6 +447,17 @@ function App() {
             <div className="panel-heading compact">
               <p className="eyebrow">Read</p>
               <h2>Verify proof</h2>
+            </div>
+
+            <div className="upload-record">
+              <label htmlFor="receipt-record-file">Receipt JSON</label>
+              <input
+                id="receipt-record-file"
+                type="file"
+                accept="application/json,.json"
+                onChange={importReceiptRecord}
+              />
+              <p>Upload a saved receipt record to fill the verify fields.</p>
             </div>
 
             <div className="field-grid">
@@ -294,15 +473,61 @@ function App() {
                   required
                 />
               </div>
+            </div>
+
+            <div className="receipt-grid compact-grid">
               <div className="field">
-                <label htmlFor="verify-input">Receipt reference</label>
+                <label htmlFor="verify-invoice">Invoice number</label>
                 <input
-                  id="verify-input"
+                  id="verify-invoice"
                   type="text"
-                  value={verifyInput}
-                  onChange={(event) => setVerifyInput(event.target.value)}
-                  placeholder="Same text used when recorded"
+                  value={verifyForm.invoice}
+                  onChange={(event) =>
+                    setVerifyForm((form) => ({ ...form, invoice: event.target.value }))
+                  }
+                  placeholder="INV-2048"
                   autoComplete="off"
+                  required
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="verify-vendor">Vendor</label>
+                <input
+                  id="verify-vendor"
+                  type="text"
+                  value={verifyForm.vendor}
+                  onChange={(event) =>
+                    setVerifyForm((form) => ({ ...form, vendor: event.target.value }))
+                  }
+                  placeholder="Tokopedia"
+                  autoComplete="organization"
+                  required
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="verify-amount">Amount</label>
+                <input
+                  id="verify-amount"
+                  type="text"
+                  inputMode="decimal"
+                  value={verifyForm.amount}
+                  onChange={(event) =>
+                    setVerifyForm((form) => ({ ...form, amount: event.target.value }))
+                  }
+                  placeholder="250000 IDR"
+                  autoComplete="off"
+                  required
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="verify-date">Date</label>
+                <input
+                  id="verify-date"
+                  type="date"
+                  value={verifyForm.date}
+                  onChange={(event) =>
+                    setVerifyForm((form) => ({ ...form, date: event.target.value }))
+                  }
                   required
                 />
               </div>

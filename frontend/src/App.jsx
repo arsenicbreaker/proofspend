@@ -8,6 +8,7 @@ import { CONTRACT_ID } from '../contracts/proofspend.js'
 import './App.css'
 
 const NETWORK = 'testnet'
+const LOGO_SRC = '/favicon.svg'
 
 function truncateAddress(address, chars = 5) {
   if (!address) return ''
@@ -302,7 +303,7 @@ function App() {
       <header className="topbar" aria-label="ProofSpend header">
         <a className="brand" href="/" aria-label="ProofSpend home">
           <span className="brand-mark" aria-hidden="true">
-            P
+            <img src={LOGO_SRC} alt="" />
           </span>
           <span>ProofSpend</span>
         </a>

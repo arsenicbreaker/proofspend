@@ -1,7 +1,7 @@
 <div align="center">
   <h1>🧾 ProofSpend</h1>
   <p><strong>A privacy-focused expense proof verification system powered by Stellar Soroban.</strong></p>
-  <img src="https://img.shields.io/badge/Network-Stellar%20Testnet-blue" alt="Stellar Testnet" />
+  <img src="https://img.shields.io/badge/Network-Stellar%20Mainnet-blue" alt="Stellar Mainnet" />
   <img src="https://img.shields.io/badge/Soroban-Smart%20Contract-orange" alt="Stellar Soroban" />
   <img src="https://img.shields.io/badge/Frontend-React-61DAFB" alt="React" />
   <img src="https://img.shields.io/badge/Build-Vite-646CFF" alt="Vite" />
@@ -32,8 +32,8 @@ With this approach, ProofSpend helps organizations keep expense records more acc
 ## 🔗 Contract
 
 ```text
-Network     : Stellar Testnet
-Contract ID : CA6ICDSUSPUT3WP4BX3CE3QKLJHVG5SE2LH5B6I77743WAO5GQ5BN55Y
+Network     : Stellar Mainnet
+Contract ID : CCOSIY3DGKKTOVJKTCIK4PVY4XZ75GMOBI256WDQRDEPIANPGOMXDC3J
 Interface   : contracts/proofspend.js
 ```
 
@@ -160,7 +160,7 @@ Use a Stellar wallet supported by `stellar-contracts-kit`, such as:
 * Cyphras: https://cyphras.com
 * Lobstr: https://lobstr.co
 
-Make sure the wallet is available for Stellar Testnet.
+Make sure the wallet is set to Stellar Public/Mainnet and the account is funded with mainnet XLM.
 
 ---
 
@@ -211,5 +211,5 @@ If the smart contract is upgraded, regenerate the interface using `stellar-contr
 Example command:
 
 ```bash
-npx sck generate --contract CA6ICDSUSPUT3WP4BX3CE3QKLJHVG5SE2LH5B6I77743WAO5GQ5BN55Y --network testnet --js
+npx sck generate --contract CCOSIY3DGKKTOVJKTCIK4PVY4XZ75GMOBI256WDQRDEPIANPGOMXDC3J --network mainnet --js
 ```

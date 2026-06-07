@@ -7,8 +7,8 @@ Receipt asli tidak disimpan di blockchain. Aplikasi hanya mengirim hash SHA-256 
 ## Contract
 
 ```text
-Network     : Stellar Testnet
-Contract ID : CA6ICDSUSPUT3WP4BX3CE3QKLJHVG5SE2LH5B6I77743WAO5GQ5BN55Y
+Network     : Stellar Mainnet
+Contract ID : CCOSIY3DGKKTOVJKTCIK4PVY4XZ75GMOBI256WDQRDEPIANPGOMXDC3J
 Interface   : contracts/proofspend.js
 ```
 
@@ -112,7 +112,7 @@ Gunakan wallet Stellar yang didukung oleh `stellar-contracts-kit`, misalnya:
 - Cyphras: https://cyphras.com
 - Lobstr: https://lobstr.co
 
-Pastikan wallet tersedia untuk Stellar testnet.
+Pastikan wallet diset ke Stellar Public/Mainnet dan account sudah didanai dengan XLM mainnet.
 
 ## Project Structure
 
@@ -157,5 +157,5 @@ Jika smart contract di-upgrade, generate ulang interface dengan `stellar-contrac
 Contoh:
 
 ```bash
-npx sck generate --contract CA6ICDSUSPUT3WP4BX3CE3QKLJHVG5SE2LH5B6I77743WAO5GQ5BN55Y --network testnet --js
+npx sck generate --contract CCOSIY3DGKKTOVJKTCIK4PVY4XZ75GMOBI256WDQRDEPIANPGOMXDC3J --network mainnet --js
 ```

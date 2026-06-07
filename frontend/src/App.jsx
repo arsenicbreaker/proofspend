@@ -7,7 +7,13 @@ import heroImg from './assets/hero.png'
 import { CONTRACT_ID } from '../contracts/proofspend.js'
 import './App.css'
 
-const NETWORK = 'testnet'
+const NETWORK = 'mainnet'
+const MAINNET_PASSPHRASE = 'Public Global Stellar Network ; September 2015'
+const STELLAR_NETWORK = {
+  rpcUrl: 'https://rpc.lightsail.network',
+  networkPassphrase: MAINNET_PASSPHRASE,
+  horizonUrl: 'https://horizon.stellar.org',
+}
 const LOGO_SRC = '/favicon.svg'
 
 function truncateAddress(address, chars = 5) {
@@ -85,7 +91,7 @@ function isValidReceiptRecord(record) {
 }
 
 function App() {
-  const kit = useMemo(() => new StellarContractsKit({ network: NETWORK }), [])
+  const kit = useMemo(() => new StellarContractsKit({ network: STELLAR_NETWORK }), [])
   const receiptFileRef = useRef(null)
   const [address, setAddress] = useState('')
   const [walletState, setWalletState] = useState('idle')
@@ -112,8 +118,18 @@ function App() {
 
     try {
       const result = await kit.connect()
+      const wallet = kit.getWallet()
+      const walletPassphrase = await wallet?.getNetworkPassphrase?.().catch(() => null)
+
+      if (walletPassphrase && walletPassphrase !== MAINNET_PASSPHRASE) {
+        await kit.disconnect()
+        setAddress('')
+        setError('Wallet is still on Stellar testnet. Switch your wallet network to Public/mainnet, then connect again.')
+        return
+      }
+
       setAddress(result.address)
-      setStatus('Wallet connected on Stellar testnet.')
+      setStatus('Wallet connected on Stellar mainnet.')
       await refreshUserExpenses(result.address)
     } catch (connectError) {
       setError(formatError(connectError))
@@ -338,7 +354,7 @@ function App() {
           <h1 id="hero-title">Proofs for every spend, without leaking the receipt.</h1>
           <p className="lede">
             Add a hashed expense proof, verify a receipt later, and inspect recorded
-            proof IDs from the ProofSpend testnet contract.
+            proof IDs from the ProofSpend mainnet contract.
           </p>
           <dl className="contract-strip" aria-label="Contract details">
             <div>

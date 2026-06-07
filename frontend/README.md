@@ -1,8 +1,8 @@
 # ProofSpend
 
-ProofSpend adalah frontend React untuk menyimpan dan memverifikasi bukti pengeluaran secara private menggunakan smart contract Stellar Soroban.
+ProofSpend is a React frontend for privately recording and verifying expense proofs with a Stellar Soroban smart contract.
 
-Receipt asli tidak disimpan di blockchain. Aplikasi hanya mengirim hash SHA-256 dari data receipt ke contract, lalu user menyimpan file receipt JSON untuk proses verifikasi di kemudian hari.
+The original receipt is not stored on-chain. The app only sends a SHA-256 hash of the receipt data to the contract, then the user keeps a receipt JSON file for later verification.
 
 ## Contract
 
@@ -12,51 +12,51 @@ Contract ID : CCOSIY3DGKKTOVJKTCIK4PVY4XZ75GMOBI256WDQRDEPIANPGOMXDC3J
 Interface   : contracts/proofspend.js
 ```
 
-## Fitur
+## Features
 
-- Connect wallet Stellar.
-- Record expense proof ke smart contract.
-- Hash receipt di browser sebelum dikirim ke contract.
-- Download receipt record dalam format JSON.
-- Upload receipt JSON untuk verify proof otomatis.
-- Modal hasil verifikasi dengan status `Verified proof` atau `Verification failed`.
-- Inspect proof berdasarkan Expense ID.
-- Lihat daftar proof milik wallet yang sedang connect.
+- Connect a Stellar wallet.
+- Record an expense proof to the smart contract.
+- Hash receipt data in the browser before sending it to the contract.
+- Download the receipt record as a JSON file.
+- Upload receipt JSON to verify a proof automatically.
+- Show verification results in a modal with `Verified proof` or `Verification failed` status.
+- Inspect proofs by Expense ID.
+- View the list of proofs owned by the currently connected wallet.
 
-## Cara Kerja
+## How It Works
 
-1. User connect wallet.
-2. User isi data expense:
+1. The user connects a wallet.
+2. The user fills in the expense data:
    - Invoice number
    - Vendor
    - Amount
    - Date
-3. Frontend membuat receipt reference dari data tersebut.
-4. Receipt reference di-hash dengan SHA-256.
-5. Hash dikirim ke smart contract lewat method `add_expense`.
-6. Setelah transaksi berhasil, user download receipt JSON.
-7. Untuk verify, user upload receipt JSON.
-8. Frontend recreate hash dari JSON dan memanggil `verify_expense`.
-9. Hasil verification ditampilkan dalam modal.
+3. The frontend creates a receipt reference from the data.
+4. The receipt reference is hashed with SHA-256.
+5. The hash is sent to the smart contract through the `add_expense` method.
+6. After the transaction succeeds, the user downloads the receipt JSON.
+7. To verify a proof, the user uploads the receipt JSON.
+8. The frontend recreates the hash from the JSON and calls `verify_expense`.
+9. The verification result is displayed in a modal.
 
 ## Privacy Model
 
-ProofSpend tidak menyimpan invoice, vendor, amount, atau date di blockchain.
+ProofSpend does not store invoice number, vendor, amount, or date on the blockchain.
 
-Yang disimpan on-chain hanya:
+Only the following data is stored on-chain:
 
 - Expense ID
 - Owner wallet
 - Proof hash
 - Timestamp
 
-Karena itu, user harus menyimpan receipt JSON. Kalau file JSON hilang dan user lupa data receipt aslinya, proof tidak bisa direkonstruksi untuk verifikasi.
+Because of this, users must keep their receipt JSON file. If the JSON file is lost and the user no longer has the original receipt data, the proof cannot be reconstructed for verification.
 
 ## Smart Contract Methods
 
-Contract interface tersedia di `contracts/proofspend.js`.
+The contract interface is available at `contracts/proofspend.js`.
 
-Method yang dipakai frontend:
+Frontend-used methods:
 
 ```text
 add_expense(owner, hash)
@@ -80,13 +80,13 @@ Install dependencies:
 npm install
 ```
 
-Jalankan development server:
+Run the development server:
 
 ```bash
 npm run dev
 ```
 
-Build production:
+Build for production:
 
 ```bash
 npm run build
@@ -98,7 +98,7 @@ Lint:
 npm run lint
 ```
 
-Preview build:
+Preview the production build:
 
 ```bash
 npm run preview
@@ -106,13 +106,13 @@ npm run preview
 
 ## Wallet
 
-Gunakan wallet Stellar yang didukung oleh `stellar-contracts-kit`, misalnya:
+Use a Stellar wallet supported by `stellar-contracts-kit`, such as:
 
 - Freighter: https://freighter.app
 - Cyphras: https://cyphras.com
 - Lobstr: https://lobstr.co
 
-Pastikan wallet diset ke Stellar Public/Mainnet dan account sudah didanai dengan XLM mainnet.
+Make sure the wallet is set to Stellar Public/Mainnet and the account is funded with mainnet XLM.
 
 ## Project Structure
 
@@ -133,7 +133,7 @@ frontend/
 
 ## Receipt JSON
 
-Setelah proof berhasil direcord, frontend membuat file JSON berisi:
+After a proof is successfully recorded, the frontend creates a JSON file containing:
 
 ```text
 type
@@ -148,13 +148,13 @@ receipt
 createdAt
 ```
 
-File ini dipakai untuk verify proof tanpa perlu mengetik ulang invoice, vendor, amount, dan date.
+This file is used to verify the proof without re-entering the invoice number, vendor, amount, and date.
 
 ## Regenerate Contract Interface
 
-Jika smart contract di-upgrade, generate ulang interface dengan `stellar-contracts-kit`.
+If the smart contract is upgraded, regenerate the interface with `stellar-contracts-kit`.
 
-Contoh:
+Example:
 
 ```bash
 npx sck generate --contract CCOSIY3DGKKTOVJKTCIK4PVY4XZ75GMOBI256WDQRDEPIANPGOMXDC3J --network mainnet --js
